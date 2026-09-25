@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- JSON API with topics, politician search (umlaut-tolerant), profiles and per-topic timelines that mark changes of position per session day; error reports with validation and a per-address rate limit; the built website is embedded into the binary (#5)
 - `kurswechsel classify`: preselects paragraphs by topic keywords and classifies each speaker's stance (dafür, dagegen, neutral, unklar) with a verbatim quote and a German rationale; local Ollama models by default, the Claude API as an opt-in (#4)
 - `kurswechsel eval`: scores a classifier against the hand-labelled gold set (#4)
 - `kurswechsel ingest`: downloads the Bundestag's plenary protocols (from 2017) and MdB master data and imports speeches paragraph by paragraph into SQLite with full-text search; interjections and the presiding officer's remarks are left out, quotations are flagged (#3)

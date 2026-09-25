@@ -5,6 +5,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRun(t *testing.T) {
@@ -44,5 +45,30 @@ func TestIngestOffline(t *testing.T) {
 	err := run(context.Background(), []string{"ingest", "-db", dir + "/k.db", "-cache", dir, "-periods", "21", "-offline"}, &out)
 	if err == nil || !strings.Contains(err.Error(), "master data") {
 		t.Fatalf("err = %v, want missing master data", err)
+	}
+}
+
+func TestServeBadFlag(t *testing.T) {
+	var out bytes.Buffer
+	if err := run(context.Background(), []string{"serve", "-nope"}, &out); err == nil {
+		t.Fatal("want flag error")
+	}
+}
+
+func TestServeShutsDown(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		done <- run(ctx, []string{"serve", "-addr", "127.0.0.1:0", "-db", t.TempDir() + "/k.db"}, &bytes.Buffer{})
+	}()
+	time.Sleep(200 * time.Millisecond)
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("serve: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("serve did not stop")
 	}
 }

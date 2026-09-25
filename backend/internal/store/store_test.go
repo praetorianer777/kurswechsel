@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"io/fs"
 	"path/filepath"
 	"testing"
 	"time"
@@ -67,7 +68,7 @@ func TestMigrationsAreIdempotent(t *testing.T) {
 			t.Fatal(err)
 		}
 		v, err := s.SchemaVersion(ctx)
-		if err != nil || v != 2 {
+		if err != nil || v != latestMigration(t) {
 			t.Fatalf("version = %d, %v", v, err)
 		}
 		s.Close()
@@ -213,10 +214,19 @@ func TestForeignKeysEnforced(t *testing.T) {
 	}
 }
 
+func latestMigration(t *testing.T) int {
+	t.Helper()
+	files, err := fs.Glob(migrations, "migrations/*.sql")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("migrations: %v", err)
+	}
+	return len(files)
+}
+
 func TestSchemaVersionIsLatest(t *testing.T) {
 	s := openTest(t)
 	v, err := s.SchemaVersion(ctx)
-	if err != nil || v != 2 {
+	if err != nil || v != latestMigration(t) {
 		t.Fatalf("version = %d, %v", v, err)
 	}
 }
