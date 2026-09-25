@@ -286,3 +286,41 @@ func TestTopicAssignmentAndPending(t *testing.T) {
 		t.Errorf("stances left: %d", cnt)
 	}
 }
+
+func TestPublishedEvaluation(t *testing.T) {
+	s := openTest(t)
+	if err := s.SaveProtocol(ctx, protocol(), "u", now); err != nil {
+		t.Fatal(err)
+	}
+	s.SyncTopics(ctx, topic.All)
+	s.AssignTopic(ctx, topic.Wehrpflicht)
+	pending, _ := s.Pending(ctx, "wehrpflicht", 0)
+	for _, c := range pending {
+		s.SaveStance(ctx, c.ParagraphID, "wehrpflicht", stance.Answer{Relevant: true, Stance: stance.Neutral}, false, "ollama/m", now)
+	}
+
+	if _, err := s.PublishedEvaluation(ctx, "wehrpflicht"); err != ErrNotFound {
+		t.Fatalf("empty: %v", err)
+	}
+	base := Evaluation{Topic: "wehrpflicht", Classifier: "ollama/m", PromptVersion: stance.PromptVersion, Items: 45, StanceAccuracy: 0.7, CreatedAt: now}
+	unreviewed := base
+	if err := s.SaveEvaluation(ctx, unreviewed); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.PublishedEvaluation(ctx, "wehrpflicht"); err != ErrNotFound {
+		t.Errorf("an unreviewed gold set must not be published: %v", err)
+	}
+	other := base
+	other.GoldReviewed, other.Classifier = true, "ollama/other"
+	s.SaveEvaluation(ctx, other)
+	if _, err := s.PublishedEvaluation(ctx, "wehrpflicht"); err != ErrNotFound {
+		t.Errorf("a run of a different classifier must not be published: %v", err)
+	}
+	reviewed := base
+	reviewed.GoldReviewed, reviewed.StanceAccuracy, reviewed.CreatedAt = true, 0.8, now.Add(time.Hour)
+	s.SaveEvaluation(ctx, reviewed)
+	got, err := s.PublishedEvaluation(ctx, "wehrpflicht")
+	if err != nil || got.StanceAccuracy != 0.8 || !got.GoldReviewed || !got.CreatedAt.Equal(now.Add(time.Hour)) {
+		t.Errorf("published = %+v, %v", got, err)
+	}
+}

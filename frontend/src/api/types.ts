@@ -71,3 +71,17 @@ export interface ReportRequest {
   message: string;
   contact: string;
 }
+
+export interface Evaluation {
+  topic: string;
+  classifier: string;
+  prompt_version: string;
+  items: number;
+  relevance_precision: number;
+  relevance_recall: number;
+  stance_accuracy: number;
+  stance_macro_f1: number;
+  flip_rate: number;
+  gold_reviewed: boolean;
+  created_at: string;
+}

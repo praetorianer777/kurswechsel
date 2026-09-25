@@ -289,3 +289,21 @@ func TestAPIOnly(t *testing.T) {
 		t.Errorf("without frontend / = %d", rec.Code)
 	}
 }
+
+func TestEvaluation(t *testing.T) {
+	st := seed(t)
+	h := NewHandler(&Server{Store: st})
+	if rec := do(h, "GET", "/api/evaluation?topic=wehrpflicht", ""); rec.Code != 404 || !strings.Contains(rec.Body.String(), "no_evaluation") {
+		t.Errorf("without a reviewed run: %d %s", rec.Code, rec.Body.String())
+	}
+	if err := st.SaveEvaluation(ctx, store.Evaluation{
+		Topic: "wehrpflicht", Classifier: "fake", PromptVersion: stance.PromptVersion,
+		Items: 45, StanceAccuracy: 0.75, GoldReviewed: true, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rec := do(h, "GET", "/api/evaluation?topic=wehrpflicht", "")
+	if e := decode[store.Evaluation](t, rec); rec.Code != 200 || e.StanceAccuracy != 0.75 {
+		t.Errorf("published: %d %+v", rec.Code, e)
+	}
+}
