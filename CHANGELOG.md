@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- German website: search by name and topic, profiles, and timelines with original quotes, stance labels (text and icon, never colour alone), marked changes of position, PDF links and a "Fehler melden" dialog; mobile-first, WCAG 2.2 AA checked with axe in light and dark mode (#6)
+- `kurswechsel seed-demo` and `scripts/build.sh`: fictional demo data and a single binary with the website embedded (#6)
 - JSON API with topics, politician search (umlaut-tolerant), profiles and per-topic timelines that mark changes of position per session day; error reports with validation and a per-address rate limit; the built website is embedded into the binary (#5)
 - `kurswechsel classify`: preselects paragraphs by topic keywords and classifies each speaker's stance (dafür, dagegen, neutral, unklar) with a verbatim quote and a German rationale; local Ollama models by default, the Claude API as an opt-in (#4)
 - `kurswechsel eval`: scores a classifier against the hand-labelled gold set (#4)

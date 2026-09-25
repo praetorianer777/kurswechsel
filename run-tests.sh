@@ -50,7 +50,15 @@ echo "🔍 Frontend lint and types"
 echo "🧪 Frontend tests"
 (cd frontend && npx vitest run)
 
-echo "🏗️  Frontend build"
-(cd frontend && npx vite build --logLevel warn)
+# The e2e suite builds the frontend into the Go binary and drives it in
+# Chromium at desktop, phone and 360 px widths, with axe on every page in
+# light and dark mode.
+echo "🎭 End-to-end tests"
+chromium="$(cd frontend && npx playwright install --dry-run chromium 2>/dev/null | awk '/Install location/ {print $3; exit}')"
+if [[ ! -d "$chromium" ]]; then
+  echo "❌ Playwright's Chromium is missing: cd frontend && npx playwright install chromium" >&2
+  exit 1
+fi
+(cd frontend && npx playwright test)
 
 echo "✅ All tests passed"
