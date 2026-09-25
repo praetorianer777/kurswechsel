@@ -31,9 +31,17 @@ Requirements: Go ≥ 1.26, Node.js ≥ 24, `jq`, and `gh` for the workflow.
 ```bash
 ./run-tests.sh                          # everything CI runs
 
-cd backend && go run ./cmd/kurswechsel serve   # API on 127.0.0.1:8080
-cd frontend && npm ci && npm run dev           # website with /api proxied to the backend
+cd backend
+go run ./cmd/kurswechsel ingest -db ../data/kurswechsel.db -cache ../data/raw   # ≈ 5 min download, 2 min import
+go run ./cmd/kurswechsel serve                                                  # API on 127.0.0.1:8080
+
+cd frontend && npm ci && npm run dev    # website with /api proxied to the backend
 ```
+
+`ingest` downloads the plenary protocols of the 19th–21st legislative
+periods (≈ 470 MB) and the MdB master data into the cache once, then imports
+only sessions the database does not have yet. `-offline` works from the cache
+alone; `-force` re-imports everything without changing paragraph IDs.
 
 ## Contributing
 
