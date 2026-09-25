@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dbtplenarprotokoll wahlperiode="20" sitzung-nr="7" sitzung-datum="26.10.2021">
+  <sitzungsverlauf>
+    <tagesordnungspunkt top-id="TOP 1">
+      <rede id="ID2000700100">
+        <p klasse="redner"><redner id="11004325"><name><vorname>Gabriele</vorname><nachname>Katzmarek</nachname><fraktion>SPD</fraktion></name></redner>Gabriele Katzmarek (SPD):</p>
+        <p klasse="J_1">Sehr geehrter Herr
+          Präsident!</p>
+        <name>Präsident Dr. Wolfgang Schäuble:</name>
+        <p klasse="J_1">Nicht lange.</p>
+        <p klasse="redner"><redner id="11004325"><name><vorname>Gabriele</vorname><nachname>Katzmarek</nachname><fraktion>SPD</fraktion></name></redner>Gabriele Katzmarek (SPD):</p>
+        <p klasse="J">Die Wehrpflicht bleibt ausgesetzt.</p>
+        <kommentar>(Beifall bei der SPD)</kommentar>
+      </rede>
+      <rede id="ID2000700200">
+        <p klasse="redner"><redner id="11005000"><name><titel>Dr.</titel><vorname>Maria</vorname><nachname>Muster</nachname><rolle><rolle_lang>Bundesministerin der Verteidigung</rolle_lang></rolle></name></redner>Dr. Maria Muster, Bundesministerin:</p>
+        <p klasse="J_1">Wir brauchen einen neuen Wehrdienst.</p>
+      </rede>
+      <rede id="ID2000700300">
+        <p klasse="redner"><redner id="11006000"><name><vorname>Leer</vorname><nachname>Rede</nachname><fraktion>FDP</fraktion></name></redner>Leer Rede (FDP):</p>
+      </rede>
+    </tagesordnungspunkt>
+  </sitzungsverlauf>
+</dbtplenarprotokoll>
