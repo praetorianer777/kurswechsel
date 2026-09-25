@@ -11,7 +11,7 @@ Every command reads or writes `../data/` (git-ignored).
 | --- | --- | --- |
 | `go run ./cmd/fetch` | 0002 | Downloads all plenary protocols of WP19–21 |
 | `go run -tags duckdb ./cmd/storagebench -pg postgres://…` | 0001 | Loads the corpus into SQLite, DuckDB and PostgreSQL and times the queries |
-| `go run ./cmd/goldcandidates` | – | Draws the reproducible sample behind `testdata/gold-wehrpflicht.jsonl` |
+| `go run ./cmd/goldcandidates` | – | Draws the reproducible sample behind `../evaluation/gold-wehrpflicht.jsonl` |
 | `go run ./cmd/topicbench` | 0003 | Scores keyword and embedding topic filters on the gold set |
 | `go run ./cmd/stancebench -models a,b@think` | 0004 | Scores local Ollama models as stance classifiers |
 

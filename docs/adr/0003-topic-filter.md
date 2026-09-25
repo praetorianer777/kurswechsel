@@ -10,7 +10,7 @@ so the expensive classifier only sees a small candidate set.
 
 ## Measurements
 
-Gold set: 110 paragraphs, 37 relevant (see `spikes/testdata/README.md`).
+Gold set: 110 paragraphs, 37 relevant (see `evaluation/README.md`).
 Embeddings: `bge-m3` via local Ollama, cosine similarity to a topic question;
 thresholds tuned on the gold set itself, so embedding rows are upper bounds.
 

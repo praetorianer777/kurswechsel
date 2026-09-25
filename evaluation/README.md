@@ -1,8 +1,8 @@
 # Gold set: Wehrpflicht
 
 `gold-wehrpflicht.jsonl` holds 110 real paragraphs from Bundestag plenary
-protocols (WP19–21), drawn reproducibly by `go run ./cmd/goldcandidates` from
-three strata:
+protocols (WP19–21), drawn reproducibly by `go run ./cmd/goldcandidates` in
+`spikes/` from three strata:
 
 | Lines | Stratum | Purpose |
 | --- | --- | --- |

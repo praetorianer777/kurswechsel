@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	goldPath := flag.String("gold", "testdata/gold-wehrpflicht.jsonl", "gold set")
+	goldPath := flag.String("gold", "../evaluation/gold-wehrpflicht.jsonl", "gold set")
 	host := flag.String("ollama", "http://127.0.0.1:11434", "Ollama URL")
 	model := flag.String("model", "bge-m3", "embedding model")
 	flag.Parse()

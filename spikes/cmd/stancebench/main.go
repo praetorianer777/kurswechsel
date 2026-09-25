@@ -33,7 +33,7 @@ type row struct {
 }
 
 func main() {
-	goldPath := flag.String("gold", "testdata/gold-wehrpflicht.jsonl", "gold set")
+	goldPath := flag.String("gold", "../evaluation/gold-wehrpflicht.jsonl", "gold set")
 	host := flag.String("ollama", "http://127.0.0.1:11434", "Ollama URL")
 	models := flag.String("models", "qwen3.5:9b@think", "comma-separated Ollama models; append @think to leave thinking on")
 	dump := flag.String("dump", "", "write every answer as JSON Lines to this file")
