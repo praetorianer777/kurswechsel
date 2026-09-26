@@ -26,11 +26,21 @@ func (o *Ollama) Name() string { return "ollama/" + o.Model }
 
 // Classify implements Classifier.
 func (o *Ollama) Classify(ctx context.Context, t topic.Topic, paragraph string) (Answer, error) {
+	return o.ClassifyInContext(ctx, t, paragraph, Context{})
+}
+
+// ClassifyInContext implements ContextClassifier. Without context it sends
+// exactly prompt v1, so results stay comparable.
+func (o *Ollama) ClassifyInContext(ctx context.Context, t topic.Topic, paragraph string, c Context) (Answer, error) {
+	system, user := SystemPrompt(t), UserPrompt(paragraph)
+	if !c.Empty() {
+		system, user = ContextSystemPrompt(t), ContextUserPrompt(paragraph, c)
+	}
 	req := map[string]any{
 		"model": o.Model,
 		"messages": []map[string]string{
-			{"role": "system", "content": SystemPrompt(t)},
-			{"role": "user", "content": UserPrompt(paragraph)},
+			{"role": "system", "content": system},
+			{"role": "user", "content": user},
 		},
 		"format":  Schema(),
 		"stream":  false,

@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+
 	"context"
 	"encoding/json"
+	"github.com/praetorianer777/kurswechsel/internal/store"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,5 +71,16 @@ func TestClassifyCommand(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "wehrpflicht: 0 candidates") {
 		t.Errorf("output: %s", buf.String())
+	}
+}
+
+func TestToStanceContext(t *testing.T) {
+	c := toStanceContext(store.ParagraphContext{
+		Previous: &store.Neighbour{Speaker: "A", Text: "Frage?"},
+		Before:   []store.Neighbour{{Text: "x"}},
+		After:    []store.Neighbour{{Text: "y"}},
+	})
+	if c.PreviousSpeaker != "A" || c.Previous != "Frage?" || c.Before[0] != "x" || c.After[0] != "y" {
+		t.Errorf("got %+v", c)
 	}
 }

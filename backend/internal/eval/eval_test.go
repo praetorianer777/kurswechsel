@@ -107,7 +107,7 @@ func TestRun(t *testing.T) {
 	if err := r.WriteMarkdown(&buf); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Classifier: fake (prompt v1)", "| Stance accuracy | 1.00 |", "| dafuer | 1 | 0 | 0 | 0 |"} {
+	for _, want := range []string{"Classifier: fake (prompt v1), topic wehrpflicht, 3 items (0 with context)", "| Stance accuracy | 1.00 |", "| dafuer | 1 | 0 | 0 | 0 |"} {
 		if !strings.Contains(buf.String(), want) {
 			t.Errorf("markdown lacks %q:\n%s", want, buf.String())
 		}
@@ -128,5 +128,41 @@ func TestRunCountsErrors(t *testing.T) {
 	}
 	if r.Errors != 3 || r.Stance.Total() != 0 {
 		t.Errorf("report = %+v", r)
+	}
+}
+
+type contextual struct{ got []stance.Context }
+
+func (*contextual) Name() string { return "ctx" }
+func (c *contextual) Classify(ctx context.Context, t topic.Topic, p string) (stance.Answer, error) {
+	return c.ClassifyInContext(ctx, t, p, stance.Context{})
+}
+func (c *contextual) ClassifyInContext(ctx context.Context, t topic.Topic, p string, pc stance.Context) (stance.Answer, error) {
+	c.got = append(c.got, pc)
+	return stance.Fake{}.Classify(ctx, t, p)
+}
+
+func TestRunInContext(t *testing.T) {
+	c := &contextual{}
+	lookup := func(it Item) (stance.Context, bool) {
+		if it.ID == "1" {
+			return stance.Context{Previous: "Frage"}, true
+		}
+		return stance.Context{}, false
+	}
+	r, err := RunInContext(context.Background(), c, topic.Wehrpflicht, goldSet(), time.Unix(0, 0), lookup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.WithContext != 1 || r.Classifier != "ctx+context" || r.PromptVersion != stance.ContextPromptVersion {
+		t.Errorf("report = %+v", r)
+	}
+	if len(c.got) != 3 || c.got[0].Previous != "Frage" || !c.got[1].Empty() {
+		t.Errorf("contexts passed = %+v", c.got)
+	}
+	// A classifier without context support ignores the lookup.
+	r, _ = RunInContext(context.Background(), stance.Fake{}, topic.Wehrpflicht, goldSet(), time.Unix(0, 0), lookup)
+	if r.WithContext != 0 || r.Classifier != "fake" {
+		t.Errorf("plain classifier = %+v", r)
 	}
 }

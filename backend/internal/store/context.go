@@ -80,3 +80,15 @@ func (s *Store) Context(ctx context.Context, speechID string, position, before, 
 	pc.Previous = &prev
 	return pc, nil
 }
+
+// FindParagraph locates a paragraph by its exact text, for data whose own
+// IDs do not match the database (the gold set was drawn with an earlier
+// parser).
+func (s *Store) FindParagraph(ctx context.Context, text string) (speechID string, position int, err error) {
+	err = s.db.QueryRowContext(ctx, `SELECT speech_id, position FROM paragraphs WHERE text = ? LIMIT 1`, text).
+		Scan(&speechID, &position)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", 0, ErrNotFound
+	}
+	return speechID, position, err
+}
