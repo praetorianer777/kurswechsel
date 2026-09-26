@@ -15,7 +15,7 @@ for tool in go node npm; do
 done
 
 echo "🎨 Go formatting"
-unformatted="$(gofmt -l backend)"
+unformatted="$(gofmt -l backend spikes)"
 if [[ -n "$unformatted" ]]; then
   echo "❌ gofmt would change:" >&2
   echo "$unformatted" >&2
@@ -27,6 +27,12 @@ echo "🔍 Go static analysis"
 
 echo "🧪 Go tests"
 (cd backend && go test -race -count=1 ./...)
+
+# The spikes are throwaway code, but their smoke tests keep the ADR numbers
+# reproducible. DuckDB (cgo) and PostgreSQL (server) stay opt-in, see
+# spikes/README.md.
+echo "🧪 Spike smoke tests"
+(cd spikes && go vet ./... && go test -count=1 ./...)
 
 # A fresh checkout has no node_modules; npm ci keeps the lockfile authoritative
 # so the gate never tests dependencies nobody committed.
