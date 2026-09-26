@@ -26,6 +26,7 @@ const DefaultModel = "qwen3:30b-a3b"
 type classifierFlags struct {
 	provider, model, ollama, topic, prompt string
 	think                                  bool
+	minConfidence                          float64
 }
 
 func (c *classifierFlags) register(fs *flag.FlagSet) {
@@ -34,7 +35,8 @@ func (c *classifierFlags) register(fs *flag.FlagSet) {
 	fs.BoolVar(&c.think, "think", false, "leave the Ollama model's thinking on (needed for qwen3.5 and gpt-oss)")
 	fs.StringVar(&c.ollama, "ollama", "http://127.0.0.1:11434", "Ollama URL")
 	fs.StringVar(&c.topic, "topic", topic.Wehrpflicht.Slug, "topic slug")
-	fs.StringVar(&c.prompt, "prompt", stance.StyleFull, "full (label, quote, rationale) or label (label only, quote by rule); Ollama only")
+	fs.StringVar(&c.prompt, "prompt", stance.StyleFull, "full (label, quote, rationale), label (label only, quote by rule) or probs (one letter, probabilities from logprobs); Ollama only")
+	fs.Float64Var(&c.minConfidence, "min-confidence", 0, "with -prompt probs: a side below this probability becomes unklar")
 }
 
 func (c *classifierFlags) build() (stance.Classifier, topic.Topic, error) {
@@ -45,15 +47,15 @@ func (c *classifierFlags) build() (stance.Classifier, topic.Topic, error) {
 	if c.prompt == "" {
 		c.prompt = stance.StyleFull
 	}
-	if c.prompt != stance.StyleFull && c.prompt != stance.StyleLabel {
+	if c.prompt != stance.StyleFull && c.prompt != stance.StyleLabel && c.prompt != stance.StyleProbs {
 		return nil, t, fmt.Errorf("unknown prompt %q", c.prompt)
 	}
-	if c.prompt == stance.StyleLabel && c.provider != "ollama" {
-		return nil, t, fmt.Errorf("-prompt label is only implemented for -provider ollama")
+	if c.prompt != stance.StyleFull && c.provider != "ollama" {
+		return nil, t, fmt.Errorf("-prompt %s is only implemented for -provider ollama", c.prompt)
 	}
 	switch c.provider {
 	case "ollama":
-		return &stance.Ollama{BaseURL: c.ollama, Model: c.model, Think: c.think, Style: c.prompt}, t, nil
+		return &stance.Ollama{BaseURL: c.ollama, Model: c.model, Think: c.think, Style: c.prompt, MinConfidence: c.minConfidence}, t, nil
 	case "claude":
 		if c.model == DefaultModel {
 			return nil, t, fmt.Errorf("-provider claude needs -model, e.g. claude-opus-5")
@@ -105,6 +107,7 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	jsonOut := fs.String("json", "", "also write the report as JSON to this file")
 	db := fs.String("db", "", "also store the result in this database")
 	reviewed := fs.Bool("gold-reviewed", false, "the gold set has been reviewed by a person; only then does the website show the result")
+	dump := fs.String("dump", "", "write every gold item with the classifier's answer as JSON Lines to this file")
 	var cf classifierFlags
 	cf.register(fs)
 	if err := fs.Parse(args); err != nil {
@@ -125,9 +128,15 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	r, err := eval.Run(ctx, c, t, items, time.Now().UTC())
+	var answers []eval.Answered
+	r, err := eval.Run(ctx, c, t, items, time.Now().UTC(), func(a eval.Answered) { answers = append(answers, a) })
 	if err != nil {
 		return err
+	}
+	if *dump != "" {
+		if err := writeJSONLines(*dump, answers); err != nil {
+			return err
+		}
 	}
 	if err := r.WriteMarkdown(stdout); err != nil {
 		return err
@@ -155,4 +164,20 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 	return os.WriteFile(*jsonOut, append(b, '\n'), 0o644)
+}
+
+func writeJSONLines[T any](path string, rows []T) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	enc := json.NewEncoder(f)
+	enc.SetEscapeHTML(false)
+	for _, r := range rows {
+		if err := enc.Encode(r); err != nil {
+			f.Close()
+			return err
+		}
+	}
+	return f.Close()
 }

@@ -24,6 +24,7 @@ func TestClassifierFlags(t *testing.T) {
 		{flags: classifierFlags{provider: "fake", topic: "mietpreise"}, wantErr: `unknown topic "mietpreise"`},
 		{flags: classifierFlags{provider: "ollama", model: "m", topic: "wehrpflicht", prompt: "label"}, name: "ollama/m+label"},
 		{flags: classifierFlags{provider: "fake", topic: "wehrpflicht", prompt: "label"}, wantErr: "only implemented for -provider ollama"},
+		{flags: classifierFlags{provider: "ollama", model: "m", topic: "wehrpflicht", prompt: "probs", minConfidence: 0.7}, name: "ollama/m+probs@0.70"},
 		{flags: classifierFlags{provider: "ollama", model: "m", topic: "wehrpflicht", prompt: "kurz"}, wantErr: `unknown prompt "kurz"`},
 	} {
 		c, _, err := tc.flags.build()
@@ -48,7 +49,8 @@ func TestEvalCommand(t *testing.T) {
 	out := filepath.Join(dir, "report.json")
 	var buf bytes.Buffer
 	db := filepath.Join(dir, "k.db")
-	if err := run(context.Background(), []string{"eval", "-provider", "fake", "-gold", gold, "-json", out, "-db", db}, &buf); err != nil {
+	dumpPath := filepath.Join(dir, "answers.jsonl")
+	if err := run(context.Background(), []string{"eval", "-provider", "fake", "-gold", gold, "-json", out, "-db", db, "-dump", dumpPath}, &buf); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "| Stance accuracy | 1.00 |") {
@@ -58,6 +60,9 @@ func TestEvalCommand(t *testing.T) {
 	b, _ := os.ReadFile(out)
 	if err := json.Unmarshal(b, &r); err != nil || r["classifier"] != "fake" {
 		t.Errorf("json report = %s, %v", b, err)
+	}
+	if b, _ := os.ReadFile(dumpPath); strings.Count(string(b), "\n") != 1 || !strings.Contains(string(b), `"stance":"dafuer"`) {
+		t.Errorf("dump = %s", b)
 	}
 	if err := run(context.Background(), []string{"eval", "-provider", "fake", "-gold", filepath.Join(dir, "missing")}, &buf); err == nil {
 		t.Error("want error for missing gold set")

@@ -26,9 +26,16 @@ type Report struct {
 	Duration  time.Duration `json:"duration_ns"`
 }
 
+// Answered is one gold item with what the classifier said about it.
+type Answered struct {
+	Item   Item          `json:"item"`
+	Answer stance.Answer `json:"answer"`
+}
+
 // Run classifies every gold item that passes the topic's keyword prefilter,
-// the same path production data takes.
-func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, now time.Time) (Report, error) {
+// the same path production data takes. Each answer is also passed to the
+// optional observers, e.g. to dump them for later analysis.
+func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, now time.Time, observe ...func(Answered)) (Report, error) {
 	r := Report{Classifier: c.Name(), PromptVersion: promptVersion(c), Topic: t.Slug, Date: now, Stance: Confusion{}}
 	start := time.Now()
 	for _, it := range items {
@@ -46,6 +53,9 @@ func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, 
 			}
 			r.Errors++
 			continue
+		}
+		for _, o := range observe {
+			o(Answered{Item: it, Answer: a})
 		}
 		r.Relevance.Add(it.Relevant, a.Relevant)
 		if it.Relevant {

@@ -18,43 +18,60 @@ type Ollama struct {
 	// Think leaves the model's thinking on. Ollama 0.30 drops the JSON schema
 	// for thinking models when thinking is switched off, so those need it.
 	Think bool
-	// Style is StyleFull (the default when empty) or StyleLabel.
+	// Style is StyleFull (the default when empty), StyleLabel or StyleProbs.
 	Style string
-	HTTP  *http.Client
+	// MinConfidence applies to StyleProbs: a side below it becomes "unklar".
+	MinConfidence float64
+	HTTP          *http.Client
 }
 
 // Name implements Classifier. The label-only style is part of the name so
 // its stored results are never mistaken for full-prompt ones.
 func (o *Ollama) Name() string {
-	if o.Style == StyleLabel {
+	switch o.Style {
+	case StyleLabel:
 		return "ollama/" + o.Model + "+label"
+	case StyleProbs:
+		if o.MinConfidence > 0 {
+			return fmt.Sprintf("ollama/%s+probs@%.2f", o.Model, o.MinConfidence)
+		}
+		return "ollama/" + o.Model + "+probs"
 	}
 	return "ollama/" + o.Model
 }
 
 // Prompt reports the prompt version this classifier uses.
 func (o *Ollama) Prompt() string {
-	if o.Style == StyleLabel {
+	switch o.Style {
+	case StyleLabel:
 		return LabelPromptVersion
+	case StyleProbs:
+		return ProbsPromptVersion
 	}
 	return PromptVersion
 }
 
 // Classify implements Classifier.
 func (o *Ollama) Classify(ctx context.Context, t topic.Topic, paragraph string) (Answer, error) {
-	system, schema := SystemPrompt(t), Schema()
-	if o.Style == StyleLabel {
-		system, schema = LabelSystemPrompt(t), LabelSchema()
+	options := map[string]any{"temperature": 0, "seed": 1, "num_ctx": 8192}
+	req := map[string]any{"model": o.Model, "stream": false, "options": options}
+	system := SystemPrompt(t)
+	switch o.Style {
+	case StyleLabel:
+		system = LabelSystemPrompt(t)
+		req["format"] = LabelSchema()
+	case StyleProbs:
+		// No schema: it would make the first token "{" instead of the letter.
+		system = ProbsSystemPrompt(t)
+		options["num_predict"] = 1
+		req["logprobs"] = true
+		req["top_logprobs"] = 20
+	default:
+		req["format"] = Schema()
 	}
-	req := map[string]any{
-		"model": o.Model,
-		"messages": []map[string]string{
-			{"role": "system", "content": system},
-			{"role": "user", "content": UserPrompt(paragraph)},
-		},
-		"format":  schema,
-		"stream":  false,
-		"options": map[string]any{"temperature": 0, "seed": 1, "num_ctx": 8192},
+	req["messages"] = []map[string]string{
+		{"role": "system", "content": system},
+		{"role": "user", "content": UserPrompt(paragraph)},
 	}
 	if !o.Think {
 		req["think"] = false
@@ -85,9 +102,22 @@ func (o *Ollama) Classify(ctx context.Context, t topic.Topic, paragraph string) 
 		Message struct {
 			Content string `json:"content"`
 		} `json:"message"`
+		Logprobs []struct {
+			TopLogprobs []logprob `json:"top_logprobs"`
+		} `json:"logprobs"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return Answer{}, fmt.Errorf("ollama: %w", err)
+	}
+	if o.Style == StyleProbs {
+		if len(out.Logprobs) == 0 {
+			return Answer{}, fmt.Errorf("ollama: no logprobs in reply; needs Ollama with logprobs support")
+		}
+		probs, err := letterProbs(out.Logprobs[0].TopLogprobs)
+		if err != nil {
+			return Answer{}, fmt.Errorf("ollama: %w (reply %q)", err, out.Message.Content)
+		}
+		return probsAnswer(probs, o.MinConfidence, paragraph, t), nil
 	}
 	a, err := Parse(out.Message.Content)
 	if err == nil && o.Style == StyleLabel {
