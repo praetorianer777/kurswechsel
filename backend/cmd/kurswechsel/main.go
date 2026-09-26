@@ -24,8 +24,10 @@ import (
 const usage = `usage: kurswechsel <command> [flags]
 
 commands:
-  ingest   download Bundestag protocols and master data into the database
-  serve    run the HTTP server
+  ingest     download Bundestag protocols and master data into the database
+  classify   classify the stance of candidate paragraphs for a topic
+  eval       measure a classifier against the hand-labelled gold set
+  serve      run the HTTP server
 
 Run "kurswechsel <command> -h" for the flags of a command.
 `
@@ -45,6 +47,10 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	switch args[0] {
 	case "ingest":
 		return ingestCmd(ctx, args[1:], stdout)
+	case "classify":
+		return classifyCmd(ctx, args[1:], stdout)
+	case "eval":
+		return evalCmd(ctx, args[1:], stdout)
 	case "serve":
 		return serve(ctx, args[1:])
 	case "help", "-h", "--help":

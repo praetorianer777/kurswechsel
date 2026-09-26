@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/praetorianer777/kurswechsel/internal/bundestag"
+	"github.com/praetorianer777/kurswechsel/internal/stance"
+	"github.com/praetorianer777/kurswechsel/internal/topic"
 )
 
 func openTest(t *testing.T) *Store {
@@ -65,7 +67,7 @@ func TestMigrationsAreIdempotent(t *testing.T) {
 			t.Fatal(err)
 		}
 		v, err := s.SchemaVersion(ctx)
-		if err != nil || v != 1 {
+		if err != nil || v != 2 {
 			t.Fatalf("version = %d, %v", v, err)
 		}
 		s.Close()
@@ -208,5 +210,69 @@ func TestForeignKeysEnforced(t *testing.T) {
 	_, err := s.db.Exec(`INSERT INTO paragraphs (speech_id, position, text) VALUES ('missing', 0, 'x')`)
 	if err == nil {
 		t.Fatal("want foreign key violation")
+	}
+}
+
+func TestSchemaVersionIsLatest(t *testing.T) {
+	s := openTest(t)
+	v, err := s.SchemaVersion(ctx)
+	if err != nil || v != 2 {
+		t.Fatalf("version = %d, %v", v, err)
+	}
+}
+
+func TestStanceRejectsUnknownLabel(t *testing.T) {
+	s := openTest(t)
+	if err := s.SaveProtocol(ctx, protocol(), "u", now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO topics VALUES ('t', 'T', 'Q?', 'x')`); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.db.Exec(`INSERT INTO stances VALUES (1, 't', 1, 'ja', '', 0, '', 0, 'm', 'v1', '')`)
+	if err == nil {
+		t.Fatal("CHECK constraint on stance not enforced")
+	}
+}
+
+func TestTopicAssignmentAndPending(t *testing.T) {
+	s := openTest(t)
+	if err := s.SaveProtocol(ctx, protocol(), "u", now); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SyncTopics(ctx, topic.All); err != nil {
+		t.Fatal(err)
+	}
+	n, err := s.AssignTopic(ctx, topic.Wehrpflicht)
+	if err != nil || n != 2 {
+		t.Fatalf("AssignTopic = %d, %v", n, err)
+	}
+	pending, err := s.Pending(ctx, "wehrpflicht", 0)
+	if err != nil || len(pending) != 2 {
+		t.Fatalf("Pending = %v, %v", pending, err)
+	}
+	if limited, _ := s.Pending(ctx, "wehrpflicht", 1); len(limited) != 1 {
+		t.Errorf("limit ignored: %d", len(limited))
+	}
+
+	a := stance.Answer{Relevant: true, Stance: stance.Against, Quote: "q", Rationale: "r", Confidence: 0.7}
+	if err := s.SaveStance(ctx, pending[0].ParagraphID, "wehrpflicht", a, false, "fake", now); err != nil {
+		t.Fatal(err)
+	}
+	if left, _ := s.Pending(ctx, "wehrpflicht", 0); len(left) != 1 {
+		t.Errorf("classified paragraph still pending: %d left", len(left))
+	}
+	// A result from an older prompt counts as pending again.
+	s.db.Exec(`UPDATE stances SET prompt_version = 'v0'`)
+	if left, _ := s.Pending(ctx, "wehrpflicht", 0); len(left) != 2 {
+		t.Errorf("outdated prompt not pending: %d", len(left))
+	}
+	if err := s.DeleteStances(ctx, "wehrpflicht"); err != nil {
+		t.Fatal(err)
+	}
+	var cnt int
+	s.db.QueryRow(`SELECT count(*) FROM stances`).Scan(&cnt)
+	if cnt != 0 {
+		t.Errorf("stances left: %d", cnt)
 	}
 }
