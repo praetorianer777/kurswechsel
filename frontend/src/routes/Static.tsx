@@ -1,6 +1,71 @@
 import { Link } from "react-router";
+import { api } from "../api/client";
 import { PageHeading } from "../components/PageHeading";
+import { useApi } from "../hooks/useApi";
 import { de } from "../i18n/de";
+import { formatDate } from "../lib/format";
+
+const percent = new Intl.NumberFormat("de-DE", {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
+
+/** Shows the measured accuracy, but only from a run against a reviewed gold set. */
+function Accuracy() {
+  const a = de.accuracy;
+  const state = useApi((s) => api.evaluation("wehrpflicht", s), []);
+  return (
+    <section aria-labelledby="genauigkeit" className="flex flex-col gap-2">
+      <h2 id="genauigkeit" className="text-xl font-bold">
+        {a.heading}
+      </h2>
+      <p>{a.intro}</p>
+      {state.status === "ok" ? (
+        <>
+          <table className="w-full border-collapse text-left">
+            <caption className="mb-2 text-left text-sm text-muted">
+              {a.caption("Wehrpflicht", formatDate(state.data.created_at))}
+            </caption>
+            <thead>
+              <tr className="border-b border-line">
+                <th scope="col" className="py-2 pr-4">
+                  {a.metric}
+                </th>
+                <th scope="col" className="py-2 text-right">
+                  {a.value}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                [
+                  [a.stanceAccuracy, state.data.stance_accuracy],
+                  [a.relevanceRecall, state.data.relevance_recall],
+                  [a.relevancePrecision, state.data.relevance_precision],
+                  [a.flipRate, state.data.flip_rate],
+                ] as const
+              ).map(([label, value]) => (
+                <tr key={label} className="border-b border-line">
+                  <th scope="row" className="py-2 pr-4 font-normal">
+                    {label}
+                  </th>
+                  <td className="py-2 text-right font-semibold tabular-nums">
+                    {percent.format(value)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-sm text-muted">
+            {a.basis(state.data.items, state.data.classifier)}
+          </p>
+        </>
+      ) : (
+        state.status !== "loading" && <p>{a.pending}</p>
+      )}
+    </section>
+  );
+}
 
 export function Methodology() {
   const m = de.methodology;
@@ -14,6 +79,7 @@ export function Methodology() {
           <p>{s.body}</p>
         </section>
       ))}
+      <Accuracy />
     </article>
   );
 }

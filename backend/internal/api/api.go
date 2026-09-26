@@ -51,6 +51,7 @@ func NewHandler(s *Server) http.Handler {
 	mux.HandleFunc("GET /api/politicians", s.politicians)
 	mux.HandleFunc("GET /api/politicians/{id}", s.politician)
 	mux.HandleFunc("GET /api/timeline", s.timeline)
+	mux.HandleFunc("GET /api/evaluation", s.evaluation)
 	mux.HandleFunc("POST /api/reports", s.report)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found")
@@ -177,6 +178,19 @@ func (s *Server) timeline(w http.ResponseWriter, r *http.Request) {
 		Changes:    n,
 		Entries:    es,
 	})
+}
+
+func (s *Server) evaluation(w http.ResponseWriter, r *http.Request) {
+	e, err := s.Store.PublishedEvaluation(r.Context(), r.URL.Query().Get("topic"))
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "no_evaluation")
+		return
+	}
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, e)
 }
 
 // ReportRequest is the body of POST /api/reports.

@@ -21,7 +21,8 @@ English.
 | --- | --- |
 | `backend/` | Go module: ingestion, classification, JSON API, single `kurswechsel` binary |
 | `frontend/` | React + TypeScript + Tailwind CSS website (German UI) |
-| `docs/` | Architecture, methodology and architecture decision records |
+| `docs/` | [Architecture](docs/architecture.md), [methodology](docs/methodology.md) and [decision records](docs/adr/README.md) |
+| `evaluation/` | Hand-labelled gold set for measuring the classifier |
 | `run-tests.sh` | The one test gate, used by the git hook and CI |
 
 ## Development

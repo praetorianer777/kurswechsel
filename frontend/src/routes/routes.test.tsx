@@ -240,3 +240,54 @@ describe("static pages", () => {
     await expectAccessible(container);
   });
 });
+
+describe("methodology", () => {
+  test("shows the measured accuracy from a reviewed evaluation", async () => {
+    mockFetch({
+      "/api/evaluation?topic=wehrpflicht": {
+        body: {
+          topic: "wehrpflicht",
+          classifier: "ollama/qwen3:30b-a3b",
+          prompt_version: "v1",
+          items: 45,
+          relevance_precision: 0.9,
+          relevance_recall: 0.97,
+          stance_accuracy: 0.72,
+          stance_macro_f1: 0.6,
+          flip_rate: 0.05,
+          gold_reviewed: true,
+          created_at: "2026-10-01T12:00:00Z",
+        },
+      },
+    });
+    const { container } = renderAt(<App />, "/methodik");
+    const table = await screen.findByRole("table", {
+      name: /Messung zum Thema Wehrpflicht vom 1. Oktober 2026/,
+    });
+    expect(
+      within(table).getByRole("row", { name: /Einordnung stimmt/ }),
+    ).toHaveTextContent("72 %");
+    expect(
+      screen.getByText(
+        "Grundlage: 45 geprüfte Absätze, Modell ollama/qwen3:30b-a3b.",
+      ),
+    ).toBeInTheDocument();
+    await expectAccessible(container);
+  });
+
+  test("says the measurement is pending without a reviewed evaluation", async () => {
+    mockFetch({
+      "/api/evaluation?topic=wehrpflicht": {
+        status: 404,
+        body: { error: "no_evaluation" },
+      },
+    });
+    renderAt(<App />, "/methodik");
+    expect(
+      await screen.findByText(
+        /sobald der Prüfdatensatz von einer Person kontrolliert ist/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+});

@@ -44,7 +44,8 @@ func TestEvalCommand(t *testing.T) {
 `), 0o644)
 	out := filepath.Join(dir, "report.json")
 	var buf bytes.Buffer
-	if err := run(context.Background(), []string{"eval", "-provider", "fake", "-gold", gold, "-json", out}, &buf); err != nil {
+	db := filepath.Join(dir, "k.db")
+	if err := run(context.Background(), []string{"eval", "-provider", "fake", "-gold", gold, "-json", out, "-db", db}, &buf); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "| Stance accuracy | 1.00 |") {

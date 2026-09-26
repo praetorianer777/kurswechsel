@@ -93,6 +93,8 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	fs.SetOutput(stdout)
 	goldPath := fs.String("gold", "../evaluation/gold-wehrpflicht.jsonl", "gold set (JSON Lines)")
 	jsonOut := fs.String("json", "", "also write the report as JSON to this file")
+	db := fs.String("db", "", "also store the result in this database")
+	reviewed := fs.Bool("gold-reviewed", false, "the gold set has been reviewed by a person; only then does the website show the result")
 	var cf classifierFlags
 	cf.register(fs)
 	if err := fs.Parse(args); err != nil {
@@ -119,6 +121,21 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	if err := r.WriteMarkdown(stdout); err != nil {
 		return err
+	}
+	if *db != "" {
+		st, err := store.Open(ctx, *db)
+		if err != nil {
+			return err
+		}
+		defer st.Close()
+		if err := st.SaveEvaluation(ctx, store.Evaluation{
+			Topic: t.Slug, Classifier: r.Classifier, PromptVersion: r.PromptVersion, Items: r.Items,
+			RelevancePrecision: r.Relevance.Precision(), RelevanceRecall: r.Relevance.Recall(),
+			StanceAccuracy: r.Stance.Accuracy(), StanceMacroF1: r.Stance.MacroF1(), FlipRate: r.Stance.FlipRate(),
+			GoldReviewed: *reviewed, CreatedAt: r.Date,
+		}); err != nil {
+			return err
+		}
 	}
 	if *jsonOut == "" {
 		return nil

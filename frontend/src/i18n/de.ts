@@ -144,14 +144,27 @@ export const de = {
         body: "Verglichen werden Sitzungstage, nicht einzelne Absätze: Überwiegen an einem Tag Aussagen dafür oder dagegen, gilt das als Position dieses Tages. Unterscheidet sie sich vom letzten Tag mit einer Position, wird ein Positionswechsel markiert. Neue Fakten, Koalitionsverträge oder Krisen können einen Wechsel gut erklären – eine Wertung ist damit nicht verbunden.",
       },
       {
-        heading: "Genauigkeit",
-        body: "Die Trefferquote des Modells wird an einem von Hand eingeordneten Prüfdatensatz gemessen. Die Messung wird veröffentlicht, sobald der Prüfdatensatz unabhängig kontrolliert ist.",
-      },
-      {
         heading: "Fehler und Korrekturen",
         body: "Jeder Eintrag hat einen Knopf „Fehler melden“. Meldungen werden geprüft; falsche Einordnungen werden korrigiert.",
       },
     ],
+  },
+  accuracy: {
+    heading: "Genauigkeit",
+    intro:
+      "Die Trefferquote des Modells wird an einem von Hand eingeordneten Prüfdatensatz mit echten Absätzen aus dem Bundestag gemessen.",
+    pending:
+      "Die Messung wird veröffentlicht, sobald der Prüfdatensatz von einer Person kontrolliert ist.",
+    caption: (topic: string, date: string) =>
+      `Messung zum Thema ${topic} vom ${date}`,
+    metric: "Kennzahl",
+    value: "Wert",
+    stanceAccuracy: "Einordnung stimmt mit der Handprüfung überein",
+    relevanceRecall: "Relevante Absätze, die gefunden werden",
+    relevancePrecision: "Gefundene Absätze, die wirklich relevant sind",
+    flipRate: "Aussagen dafür oder dagegen, die ins Gegenteil verkehrt werden",
+    basis: (items: number, model: string) =>
+      `Grundlage: ${items} geprüfte Absätze, Modell ${model}.`,
   },
   imprint: {
     title: "Impressum",

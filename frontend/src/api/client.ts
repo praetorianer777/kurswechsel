@@ -1,5 +1,6 @@
 import { errorMessage } from "../i18n/de";
 import type {
+  Evaluation,
   PoliticianDetail,
   PoliticianSummary,
   ReportRequest,
@@ -63,6 +64,11 @@ export const api = {
   timeline: (politician: string, topic: string, signal?: AbortSignal) =>
     request<TimelineResponse>(
       `/api/timeline?${new URLSearchParams({ politician, topic }).toString()}`,
+      { signal },
+    ),
+  evaluation: (topic: string, signal?: AbortSignal) =>
+    request<Evaluation>(
+      `/api/evaluation?${new URLSearchParams({ topic }).toString()}`,
       { signal },
     ),
   report: (body: ReportRequest) =>
