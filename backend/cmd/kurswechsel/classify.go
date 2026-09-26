@@ -24,8 +24,8 @@ import (
 const DefaultModel = "qwen3:30b-a3b"
 
 type classifierFlags struct {
-	provider, model, ollama, topic string
-	think                          bool
+	provider, model, ollama, topic, prompt string
+	think                                  bool
 }
 
 func (c *classifierFlags) register(fs *flag.FlagSet) {
@@ -34,6 +34,7 @@ func (c *classifierFlags) register(fs *flag.FlagSet) {
 	fs.BoolVar(&c.think, "think", false, "leave the Ollama model's thinking on (needed for qwen3.5 and gpt-oss)")
 	fs.StringVar(&c.ollama, "ollama", "http://127.0.0.1:11434", "Ollama URL")
 	fs.StringVar(&c.topic, "topic", topic.Wehrpflicht.Slug, "topic slug")
+	fs.StringVar(&c.prompt, "prompt", stance.StyleFull, "full (label, quote, rationale) or label (label only, quote by rule); Ollama only")
 }
 
 func (c *classifierFlags) build() (stance.Classifier, topic.Topic, error) {
@@ -41,9 +42,18 @@ func (c *classifierFlags) build() (stance.Classifier, topic.Topic, error) {
 	if !ok {
 		return nil, t, fmt.Errorf("unknown topic %q", c.topic)
 	}
+	if c.prompt == "" {
+		c.prompt = stance.StyleFull
+	}
+	if c.prompt != stance.StyleFull && c.prompt != stance.StyleLabel {
+		return nil, t, fmt.Errorf("unknown prompt %q", c.prompt)
+	}
+	if c.prompt == stance.StyleLabel && c.provider != "ollama" {
+		return nil, t, fmt.Errorf("-prompt label is only implemented for -provider ollama")
+	}
 	switch c.provider {
 	case "ollama":
-		return &stance.Ollama{BaseURL: c.ollama, Model: c.model, Think: c.think}, t, nil
+		return &stance.Ollama{BaseURL: c.ollama, Model: c.model, Think: c.think, Style: c.prompt}, t, nil
 	case "claude":
 		if c.model == DefaultModel {
 			return nil, t, fmt.Errorf("-provider claude needs -model, e.g. claude-opus-5")

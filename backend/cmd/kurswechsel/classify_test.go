@@ -22,6 +22,9 @@ func TestClassifierFlags(t *testing.T) {
 		{flags: classifierFlags{provider: "claude", model: DefaultModel, topic: "wehrpflicht"}, wantErr: "needs -model"},
 		{flags: classifierFlags{provider: "openai", topic: "wehrpflicht"}, wantErr: `unknown provider "openai"`},
 		{flags: classifierFlags{provider: "fake", topic: "mietpreise"}, wantErr: `unknown topic "mietpreise"`},
+		{flags: classifierFlags{provider: "ollama", model: "m", topic: "wehrpflicht", prompt: "label"}, name: "ollama/m+label"},
+		{flags: classifierFlags{provider: "fake", topic: "wehrpflicht", prompt: "label"}, wantErr: "only implemented for -provider ollama"},
+		{flags: classifierFlags{provider: "ollama", model: "m", topic: "wehrpflicht", prompt: "kurz"}, wantErr: `unknown prompt "kurz"`},
 	} {
 		c, _, err := tc.flags.build()
 		if tc.wantErr != "" {

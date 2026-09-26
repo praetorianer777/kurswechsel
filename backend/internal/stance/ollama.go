@@ -18,21 +18,41 @@ type Ollama struct {
 	// Think leaves the model's thinking on. Ollama 0.30 drops the JSON schema
 	// for thinking models when thinking is switched off, so those need it.
 	Think bool
+	// Style is StyleFull (the default when empty) or StyleLabel.
+	Style string
 	HTTP  *http.Client
 }
 
-// Name implements Classifier.
-func (o *Ollama) Name() string { return "ollama/" + o.Model }
+// Name implements Classifier. The label-only style is part of the name so
+// its stored results are never mistaken for full-prompt ones.
+func (o *Ollama) Name() string {
+	if o.Style == StyleLabel {
+		return "ollama/" + o.Model + "+label"
+	}
+	return "ollama/" + o.Model
+}
+
+// Prompt reports the prompt version this classifier uses.
+func (o *Ollama) Prompt() string {
+	if o.Style == StyleLabel {
+		return LabelPromptVersion
+	}
+	return PromptVersion
+}
 
 // Classify implements Classifier.
 func (o *Ollama) Classify(ctx context.Context, t topic.Topic, paragraph string) (Answer, error) {
+	system, schema := SystemPrompt(t), Schema()
+	if o.Style == StyleLabel {
+		system, schema = LabelSystemPrompt(t), LabelSchema()
+	}
 	req := map[string]any{
 		"model": o.Model,
 		"messages": []map[string]string{
-			{"role": "system", "content": SystemPrompt(t)},
+			{"role": "system", "content": system},
 			{"role": "user", "content": UserPrompt(paragraph)},
 		},
-		"format":  Schema(),
+		"format":  schema,
 		"stream":  false,
 		"options": map[string]any{"temperature": 0, "seed": 1, "num_ctx": 8192},
 	}
@@ -69,5 +89,9 @@ func (o *Ollama) Classify(ctx context.Context, t topic.Topic, paragraph string) 
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return Answer{}, fmt.Errorf("ollama: %w", err)
 	}
-	return Parse(out.Message.Content)
+	a, err := Parse(out.Message.Content)
+	if err == nil && o.Style == StyleLabel {
+		a.Quote = QuoteFor(paragraph, t)
+	}
+	return a, err
 }
