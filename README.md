@@ -50,6 +50,24 @@ by default and never call a paid API unless given `-provider claude` (which
 reads `ANTHROPIC_API_KEY`). Only paragraphs with a new or outdated
 classification are sent to the model, so interrupted runs resume.
 
+## API
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /api/topics` | Topics with the number of people and statements |
+| `GET /api/politicians?q=&topic=` | Up to 50 people; `q` matches names (umlauts may be written out), `topic` limits to people with statements on it |
+| `GET /api/politicians/{id}` | Profile with faction history and topics |
+| `GET /api/timeline?politician=&topic=` | Statements in chronological order; `change` marks a change of position |
+| `POST /api/reports` | Error report for one statement: `{paragraph_id, topic, message, contact?}` |
+| `GET /healthz` | Liveness |
+
+Errors come back as `{"error": "<code>"}`; the website translates the codes.
+
+A change of position is judged per session day: the day's position is the
+majority of its „dafür“ and „dagegen“ statements, and it is marked when it
+differs from the previous day that had one. Neutral and unclear statements
+never count, so a speech that paraphrases the other side is not a change.
+
 ## Contributing
 
 Every change starts as an English GitHub issue and lands through a pull request

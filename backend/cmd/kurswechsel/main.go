@@ -19,6 +19,7 @@ import (
 	"github.com/praetorianer777/kurswechsel/internal/bundestag"
 	"github.com/praetorianer777/kurswechsel/internal/ingest"
 	"github.com/praetorianer777/kurswechsel/internal/store"
+	"github.com/praetorianer777/kurswechsel/internal/web"
 )
 
 const usage = `usage: kurswechsel <command> [flags]
@@ -65,6 +66,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 func serve(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	addr := fs.String("addr", "127.0.0.1:8080", "listen address")
+	db := fs.String("db", "data/kurswechsel.db", "SQLite database")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -72,14 +74,23 @@ func serve(ctx context.Context, args []string) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	st, err := store.Open(ctx, *db)
+	if err != nil {
+		return err
+	}
+	defer st.Close()
+
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           api.NewHandler(),
+		Handler:           api.NewHandler(&api.Server{Store: st, Frontend: web.Dist()}),
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       2 * time.Minute,
 	}
 	errc := make(chan error, 1)
 	go func() { errc <- srv.ListenAndServe() }()
-	slog.Info("listening", "addr", *addr)
+	slog.Info("listening", "addr", *addr, "db", *db)
 
 	select {
 	case err := <-errc:
