@@ -93,6 +93,7 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	fs.SetOutput(stdout)
 	goldPath := fs.String("gold", "../evaluation/gold-wehrpflicht.jsonl", "gold set (JSON Lines)")
 	jsonOut := fs.String("json", "", "also write the report as JSON to this file")
+	withContext := fs.String("context", "", "database to look up the paragraphs around each gold item; the classifier then gets them as context")
 	db := fs.String("db", "", "also store the result in this database")
 	reviewed := fs.Bool("gold-reviewed", false, "the gold set has been reviewed by a person; only then does the website show the result")
 	var cf classifierFlags
@@ -115,7 +116,26 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	r, err := eval.Run(ctx, c, t, items, time.Now().UTC())
+	var lookup eval.ContextLookup
+	if *withContext != "" {
+		cst, err := store.Open(ctx, *withContext)
+		if err != nil {
+			return err
+		}
+		defer cst.Close()
+		lookup = func(it eval.Item) (stance.Context, bool) {
+			speech, pos, err := cst.FindParagraph(ctx, it.Text)
+			if err != nil {
+				return stance.Context{}, false
+			}
+			pc, err := cst.Context(ctx, speech, pos, 2, 1)
+			if err != nil {
+				return stance.Context{}, false
+			}
+			return toStanceContext(pc), true
+		}
+	}
+	r, err := eval.RunInContext(ctx, c, t, items, time.Now().UTC(), lookup)
 	if err != nil {
 		return err
 	}
@@ -145,4 +165,18 @@ func evalCmd(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 	return os.WriteFile(*jsonOut, append(b, '\n'), 0o644)
+}
+
+func toStanceContext(pc store.ParagraphContext) stance.Context {
+	var c stance.Context
+	if pc.Previous != nil {
+		c.PreviousSpeaker, c.Previous = pc.Previous.Speaker, pc.Previous.Text
+	}
+	for _, n := range pc.Before {
+		c.Before = append(c.Before, n.Text)
+	}
+	for _, n := range pc.After {
+		c.After = append(c.After, n.Text)
+	}
+	return c
 }

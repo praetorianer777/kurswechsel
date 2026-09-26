@@ -18,18 +18,38 @@ type Report struct {
 	Date          time.Time `json:"date"`
 	// Items is how many gold items passed the keyword prefilter and were
 	// sent to the classifier.
-	Items     int           `json:"items"`
-	Errors    int           `json:"errors"`
-	Relevance Binary        `json:"relevance"`
-	Stance    Confusion     `json:"stance"`
-	Verbatim  int           `json:"verbatim_quotes"`
-	Duration  time.Duration `json:"duration_ns"`
+	Items     int       `json:"items"`
+	Errors    int       `json:"errors"`
+	Relevance Binary    `json:"relevance"`
+	Stance    Confusion `json:"stance"`
+	Verbatim  int       `json:"verbatim_quotes"`
+	// WithContext counts items classified with surrounding paragraphs.
+	WithContext int           `json:"with_context,omitempty"`
+	Duration    time.Duration `json:"duration_ns"`
 }
 
 // Run classifies every gold item that passes the topic's keyword prefilter,
 // the same path production data takes.
 func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, now time.Time) (Report, error) {
+	return RunInContext(ctx, c, t, items, now, nil)
+}
+
+// ContextLookup finds the paragraphs around a gold item; ok is false when
+// the item cannot be located in the corpus.
+type ContextLookup func(Item) (c stance.Context, ok bool)
+
+// RunInContext is Run, but gives context-aware classifiers the paragraphs
+// around each item. Items without context are classified without it, which
+// the report counts.
+func RunInContext(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, now time.Time, lookup ContextLookup) (Report, error) {
 	r := Report{Classifier: c.Name(), PromptVersion: stance.PromptVersion, Topic: t.Slug, Date: now, Stance: Confusion{}}
+	cc, contextual := c.(stance.ContextClassifier)
+	if lookup != nil && contextual {
+		r.Classifier += "+context"
+		r.PromptVersion = stance.ContextPromptVersion
+	} else {
+		lookup = nil
+	}
 	start := time.Now()
 	for _, it := range items {
 		if !t.Keywords.MatchString(it.Text) {
@@ -39,7 +59,14 @@ func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, 
 			continue
 		}
 		r.Items++
-		a, err := c.Classify(ctx, t, it.Text)
+		var a stance.Answer
+		var err error
+		if pc, ok := lookupContext(lookup, it); ok {
+			r.WithContext++
+			a, err = cc.ClassifyInContext(ctx, t, it.Text, pc)
+		} else {
+			a, err = c.Classify(ctx, t, it.Text)
+		}
 		if err != nil {
 			if ctx.Err() != nil {
 				return r, ctx.Err()
@@ -65,10 +92,18 @@ func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, 
 	return r, nil
 }
 
+func lookupContext(lookup ContextLookup, it Item) (stance.Context, bool) {
+	if lookup == nil {
+		return stance.Context{}, false
+	}
+	c, ok := lookup(it)
+	return c, ok && !c.Empty()
+}
+
 // WriteMarkdown prints the report for a terminal or an ADR.
 func (r Report) WriteMarkdown(w io.Writer) error {
 	predictedRelevant := r.Relevance.TP + r.Relevance.FP
-	_, err := fmt.Fprintf(w, `Classifier: %s (prompt %s), topic %s, %d items, %d errors, %s
+	_, err := fmt.Fprintf(w, `Classifier: %s (prompt %s), topic %s, %d items (%d with context), %d errors, %s
 
 | Metric | Value |
 | --- | ---: |
@@ -79,7 +114,7 @@ func (r Report) WriteMarkdown(w io.Writer) error {
 | For/against flipped | %.0f %% |
 | „unklar“ rate | %.0f %% |
 | Verbatim quotes | %d of %d |
-`, r.Classifier, r.PromptVersion, r.Topic, r.Items, r.Errors, r.Duration.Round(time.Second),
+`, r.Classifier, r.PromptVersion, r.Topic, r.Items, r.WithContext, r.Errors, r.Duration.Round(time.Second),
 		r.Relevance.Precision(), r.Relevance.Recall(), r.Stance.Accuracy(), r.Stance.MacroF1(),
 		100*r.Stance.FlipRate(), 100*r.Stance.Rate(stance.Unclear), r.Verbatim, predictedRelevant)
 	if err != nil {

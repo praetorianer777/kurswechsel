@@ -350,3 +350,17 @@ func TestContext(t *testing.T) {
 		t.Errorf("unknown speech: %v", err)
 	}
 }
+
+func TestFindParagraph(t *testing.T) {
+	s := openTest(t)
+	if err := s.SaveProtocol(ctx, protocol(), "u", now); err != nil {
+		t.Fatal(err)
+	}
+	id, pos, err := s.FindParagraph(ctx, "Ein Zitat.")
+	if err != nil || id != "ID2000700100" || pos != 1 {
+		t.Errorf("got %s %d %v", id, pos, err)
+	}
+	if _, _, err := s.FindParagraph(ctx, "gibt es nicht"); err != ErrNotFound {
+		t.Errorf("missing: %v", err)
+	}
+}
