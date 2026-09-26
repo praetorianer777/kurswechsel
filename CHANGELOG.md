@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Training set of 400 Bundestag paragraphs (gold set excluded), pre-labelled; `kurswechsel sample` draws it and `kurswechsel review` serves a local page for checking unsure pre-labels and a random sample with a live agreement rate (#27)
 - Architecture and methodology documentation; `kurswechsel eval -db … -gold-reviewed` stores results, and the „Methodik“ page shows measured accuracy only from a run against a reviewed gold set (#7)
 - German website: search by name and topic, profiles, and timelines with original quotes, stance labels (text and icon, never colour alone), marked changes of position, PDF links and a "Fehler melden" dialog; mobile-first, WCAG 2.2 AA checked with axe in light and dark mode (#6)
 - `kurswechsel seed-demo` and `scripts/build.sh`: fictional demo data and a single binary with the website embedded (#6)

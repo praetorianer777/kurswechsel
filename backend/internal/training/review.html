@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trainingsdaten prüfen – Kurswechsel</title>
+<style>
+  :root { color-scheme: light dark; --line: #d4d4d0; --muted: #555; --accent: #6b3fa0; }
+  @media (prefers-color-scheme: dark) { :root { --line: #3d3d3a; --muted: #c2c2bd; --accent: #c9a8f0; } }
+  body { font: 17px/1.55 system-ui, sans-serif; max-width: 48rem; margin: 0 auto; padding: 1rem; }
+  .meta, .muted { color: var(--muted); font-size: .92rem; }
+  blockquote { border-left: 4px solid var(--line); margin: 1rem 0; padding-left: 1rem; }
+  mark { background: #fff0a8; color: #1a1a1a; }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 1rem 0; padding: .5rem 1rem 1rem; }
+  label { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; margin-right: 1.2rem; }
+  textarea { width: 100%; min-height: 3rem; font: inherit; }
+  button { min-height: 44px; padding: 0 1.2rem; font: inherit; font-weight: 600; background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+  .context { color: var(--muted); font-size: .95rem; border-left: 4px dotted var(--line); padding-left: 1rem; margin: .5rem 0; }
+  .context .who { font-weight: 600; }
+  .current { border-left: 4px solid var(--accent); }
+  .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--line); font-size: .85rem; margin-right: .3rem; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  details { margin-top: 2rem; }
+  ol a { color: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trainingsdaten prüfen</h1>
+  <p class="muted">{{.Stats.Reviewed}} von {{.Stats.ToReview}} geprüft · {{.Stats.Unsure}} unsichere Vorschläge, {{.Stats.Sampled}} Stichprobe ·
+    Übereinstimmung in der Stichprobe: <strong>{{if .Stats.SampleReviewed}}{{.Percent}} ({{.Stats.SampleAgreed}} von {{.Stats.SampleReviewed}}){{else}}noch keine{{end}}</strong></p>
+</header>
+<main>
+{{with .Item}}
+  <p><span class="badge">{{if .Unsure}}unsicher{{else}}Stichprobe{{end}}</span>{{if .Review}}<span class="badge">bereits geprüft</span>{{end}}</p>
+  <p class="meta">{{.Date}} · {{.Speaker}} ({{.Party}}) · {{.ID}}</p>
+  {{with $.Context}}
+    {{with .Previous}}<div class="context"><p class="who">Davor sprach {{.Speaker}}:</p><p>{{.Text}}</p></div>{{end}}
+    {{range .Before}}<div class="context"><p>{{.Text}}</p></div>{{end}}
+  {{end}}
+  <p class="muted">Zu bewerten:</p>
+  <blockquote class="current"><p>{{$.Marked}}</p></blockquote>
+  {{with $.Context}}{{range .After}}<div class="context"><p>{{.Text}}</p></div>{{end}}{{end}}
+  <p class="muted">Vorschlag: <strong>{{if .Relevant}}relevant, {{index $.Names .Stance}}{{else}}nicht relevant{{end}}</strong>{{if .Note}} – {{.Note}}{{end}}</p>
+  <form method="post" action="/review">
+    <input type="hidden" name="id" value="{{.ID}}">
+    <fieldset>
+      <legend>Geht es um eine Pflicht zum Wehr- oder Gesellschaftsdienst?</legend>
+      <label><input type="radio" name="relevant" value="ja" {{if $.Relevant}}checked{{end}}> ja</label>
+      <label><input type="radio" name="relevant" value="nein" {{if not $.Relevant}}checked{{end}}> nein</label>
+    </fieldset>
+    <fieldset>
+      <legend>Haltung der sprechenden Person (nur wenn relevant)</legend>
+      {{range $.Labels}}<label><input type="radio" name="stance" value="{{.}}" {{if eq . $.Stance}}checked{{end}}> {{index $.Names .}}</label>{{end}}
+    </fieldset>
+    <p><label for="note" style="display:block">Anmerkung (freiwillig)</label>
+      <textarea id="note" name="note"></textarea></p>
+    <button type="submit">Speichern und weiter</button>
+  </form>
+{{else}}
+  <p><strong>Alles geprüft.</strong> Die Datei ist gespeichert; das Fenster kann geschlossen werden.</p>
+{{end}}
+<details>
+  <summary>Alle zu prüfenden Einträge ({{len .Queue}})</summary>
+  <ol>{{range .Queue}}<li><a href="/?id={{.ID}}">{{.Date}} {{.Speaker}}</a>{{if .Review}} ✓{{end}}{{if .Unsure}} · unsicher{{end}}</li>{{end}}</ol>
+</details>
+</main>
+</body>
+</html>

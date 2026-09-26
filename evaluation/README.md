@@ -18,7 +18,7 @@ The protocols are official documents and are in the public domain under § 5 Urh
 
 - `relevant` — the paragraph substantively discusses that question, including the 2025 military service law. A passing mention (history, other countries, compensation for service-related injuries) is not relevant.
 - `stance` (relevant paragraphs only), judged from the paragraph alone:
-  - `dafuer` — supports compulsion: reinstating conscription, compulsory screening, a mandatory year of service, or criticises its suspension.
+  - `dafuer` — supports compulsion: reinstating conscription, compulsory screening, a mandatory questionnaire, a mandatory year of service, compulsion as a fallback („zunächst freiwillig, notfalls verpflichtend“, keeping the Wehrpflicht in the Grundgesetz), or criticises its suspension. Supporting the 2025 Wehrdienst law, which includes compulsory registration and screening, counts too.
   - `dagegen` — opposes compulsion or insists on voluntary service only.
   - `neutral` — relevant, but states facts, procedure or a model without taking a side on compulsion.
   - `unklar` — a position may be implied but cannot be read off reliably: irony, rhetorical questions, other people's views.

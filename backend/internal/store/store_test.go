@@ -324,3 +324,29 @@ func TestPublishedEvaluation(t *testing.T) {
 		t.Errorf("published = %+v, %v", got, err)
 	}
 }
+
+func TestContext(t *testing.T) {
+	s := openTest(t)
+	p := protocol()
+	p.Speeches[0].Paragraphs = append(p.Speeches[0].Paragraphs, bundestag.Paragraph{Text: "Dritter Absatz."}, bundestag.Paragraph{Text: "Vierter Absatz."})
+	if err := s.SaveProtocol(ctx, p, "u", now); err != nil {
+		t.Fatal(err)
+	}
+	c, err := s.Context(ctx, "ID2000700100", 2, 2, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Before) != 2 || c.Before[1].Text != "Ein Zitat." || len(c.After) != 1 || c.After[0].Text != "Vierter Absatz." || c.Previous != nil {
+		t.Errorf("middle of speech: %+v", c)
+	}
+	c, err = s.Context(ctx, "ID2000700200", 0, 2, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Previous == nil || c.Previous.Speaker != "Berta Wechsel" || c.Previous.Text != "Vierter Absatz." {
+		t.Errorf("start of speech must show the end of the previous speech: %+v", c.Previous)
+	}
+	if _, err := s.Context(ctx, "nope", 0, 1, 1); err != ErrNotFound {
+		t.Errorf("unknown speech: %v", err)
+	}
+}

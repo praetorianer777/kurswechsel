@@ -31,6 +31,8 @@ commands:
   eval       measure a classifier against the hand-labelled gold set
   serve      run the HTTP server
   seed-demo  fill a database with fictional data for development and tests
+  sample     draw paragraphs for the training set
+  review     check pre-labelled training data in the browser
 
 Run "kurswechsel <command> -h" for the flags of a command.
 `
@@ -58,6 +60,10 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return serve(ctx, args[1:])
 	case "seed-demo":
 		return seedDemo(ctx, args[1:], stdout)
+	case "sample":
+		return sampleCmd(ctx, args[1:], stdout)
+	case "review":
+		return reviewCmd(ctx, args[1:], stdout)
 	case "help", "-h", "--help":
 		fmt.Fprint(stdout, usage)
 		return nil
