@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dbtplenarprotokoll wahlperiode="21" sitzung-nr="42" sitzung-datum="05.12.2025">
+  <sitzungsverlauf>
+    <sitzungsbeginn sitzung-start-uhrzeit="9:00">
+      <a typ="druckseitennummer" name="S4101"/>
+      <name>Präsidentin Julia Klöckner:</name>
+      <p klasse="J_1">Die Sitzung ist eröffnet.</p>
+    </sitzungsbeginn>
+    <tagesordnungspunkt top-id="Tagesordnungspunkt 3">
+      <p klasse="T_NaS">Beratung des Gesetzentwurfs</p>
+      <rede id="ID214204200">
+        <p klasse="redner"><redner id="11005001"><name><titel>Dr.</titel><vorname>Erika</vorname><nachname>Beispiel</nachname><namenszusatz>von</namenszusatz><ortszusatz>(Berlin)</ortszusatz><fraktion>SPD</fraktion></name></redner>Dr. Erika Beispiel (SPD):</p>
+        <p klasse="J_1">Der CO<sub>2</sub>-Ausstoß<fussnote>Quelle: UBA</fussnote> sinkt.</p>
+        <p klasse="J">Zeile   mit
+          Umbruch und&#160;geschütztem Leerzeichen.</p>
+        <a typ="druckseitennummer" href="S4102"/>
+        <p klasse="Z">Ein Zitat eines Gegners.</p>
+        <p klasse="AL_Namen">Abstimmungsliste</p>
+        <p klasse="J">Äußerer Absatz <p klasse="J">mit innerem</p> Ende.</p>
+        <p klasse="J">   </p>
+        <name>Präsidentin Julia Klöckner:</name>
+        <p klasse="J_1">Gestatten Sie eine Zwischenfrage?</p>
+        <p klasse="redner"><redner id="11009999"><name><vorname>Max</vorname><nachname>Frager</nachname><fraktion>AfD</fraktion></name></redner>Max Frager (AfD):</p>
+        <p klasse="J">Das ist die Frage eines anderen.</p>
+        <p klasse="redner"><redner id="11005001"><name><titel>Dr.</titel><vorname>Erika</vorname><nachname>Beispiel</nachname><fraktion>SPD</fraktion></name></redner>Dr. Erika Beispiel (SPD):</p>
+        <kommentar>(Beifall bei der SPD)</kommentar>
+        <p klasse="J">Meine Antwort.</p>
+      </rede>
+      <rede id="ID214204300">
+        <p klasse="redner"><redner id="99000001"><name><vorname>Boris</vorname><nachname>Minister</nachname><rolle><rolle_kurz>Bundesminister BMVg</rolle_kurz><rolle_lang>Bundesminister der Verteidigung</rolle_lang></rolle></name></redner>Boris Minister, Bundesminister:</p>
+        <p klasse="J_1">Kurz und knapp.</p>
+      </rede>
+      <rede id="ID214204400">
+        <p klasse="redner"><redner id="11005002"><name><vorname>Leer</vorname><nachname>Rede</nachname><fraktion>FDP</fraktion></name></redner>Leer Rede (FDP):</p>
+        <kommentar>(Heiterkeit)</kommentar>
+      </rede>
+    </tagesordnungspunkt>
+  </sitzungsverlauf>
+</dbtplenarprotokoll>

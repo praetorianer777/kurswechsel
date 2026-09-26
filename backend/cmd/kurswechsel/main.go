@@ -16,12 +16,18 @@ import (
 	"time"
 
 	"github.com/praetorianer777/kurswechsel/internal/api"
+	"github.com/praetorianer777/kurswechsel/internal/bundestag"
+	"github.com/praetorianer777/kurswechsel/internal/ingest"
+	"github.com/praetorianer777/kurswechsel/internal/store"
 )
 
 const usage = `usage: kurswechsel <command> [flags]
 
 commands:
+  ingest   download Bundestag protocols and master data into the database
   serve    run the HTTP server
+
+Run "kurswechsel <command> -h" for the flags of a command.
 `
 
 func main() {
@@ -37,6 +43,8 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return errors.New("missing command")
 	}
 	switch args[0] {
+	case "ingest":
+		return ingestCmd(ctx, args[1:], stdout)
 	case "serve":
 		return serve(ctx, args[1:])
 	case "help", "-h", "--help":
@@ -75,4 +83,48 @@ func serve(ctx context.Context, args []string) error {
 		defer cancel()
 		return srv.Shutdown(shutdownCtx)
 	}
+}
+
+func ingestCmd(ctx context.Context, args []string, stdout io.Writer) error {
+	fs := flag.NewFlagSet("ingest", flag.ContinueOnError)
+	fs.SetOutput(stdout)
+	db := fs.String("db", "data/kurswechsel.db", "SQLite database")
+	cache := fs.String("cache", "data/raw", "download cache")
+	periods := fs.String("periods", "19,20,21", "legislative periods, comma-separated")
+	offline := fs.Bool("offline", false, "use only files already in the cache")
+	force := fs.Bool("force", false, "re-import sessions already in the database")
+	refresh := fs.Bool("refresh-mdb", false, "download the master data again")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	ps, err := bundestag.ParsePeriods(*periods)
+	if err != nil {
+		return err
+	}
+
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	st, err := store.Open(ctx, *db)
+	if err != nil {
+		return err
+	}
+	defer st.Close()
+
+	f := bundestag.NewFetcher()
+	f.Logf = func(format string, a ...any) { slog.Info(fmt.Sprintf(format, a...)) }
+	start := time.Now()
+	sum, err := ingest.Run(ctx, st, f, ingest.Options{
+		CacheDir: *cache, Periods: ps, Offline: *offline, Force: *force, RefreshMdB: *refresh, Logf: f.Logf,
+	})
+	if err != nil {
+		return err
+	}
+	stats, err := st.Stats(ctx)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "imported %d sessions, skipped %d, in %s\n", sum.Imported, sum.Skipped, time.Since(start).Round(time.Second))
+	fmt.Fprintf(stdout, "database: %d politicians, %d sessions, %d speeches, %d paragraphs\n",
+		stats.Politicians, stats.Sessions, stats.Speeches, stats.Paragraphs)
+	return nil
 }
