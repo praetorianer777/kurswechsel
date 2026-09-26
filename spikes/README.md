@@ -14,6 +14,7 @@ Every command reads or writes `../data/` (git-ignored).
 | `go run ./cmd/goldcandidates` | – | Draws the reproducible sample behind `../evaluation/gold-wehrpflicht.jsonl` |
 | `go run ./cmd/topicbench` | 0003 | Scores keyword and embedding topic filters on the gold set |
 | `go run ./cmd/stancebench -models a,b@think` | 0004 | Scores local Ollama models as stance classifiers |
+| `python nli/nli_bench.py` | 0005 | Scores zero-shot NLI classifiers (Python; `pip install -r nli/requirements.txt`) |
 
 The benchmarks call only a local Ollama server (`-ollama`, default
 `http://127.0.0.1:11434`), never a paid API.
