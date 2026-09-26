@@ -63,7 +63,8 @@ alone; `-force` re-imports everything without changing paragraph IDs.
 
 `classify` and `eval` run against a local [Ollama](https://ollama.com) server
 by default and never call a paid API unless given `-provider claude` (which
-reads `ANTHROPIC_API_KEY`). Only paragraphs with a new or outdated
+reads `ANTHROPIC_API_KEY`). `-prompt label` asks the model for the label
+only and picks the quote by rule — faster, less accurate (ADR 0006). Only paragraphs with a new or outdated
 classification are sent to the model, so interrupted runs resume.
 
 ## API

@@ -29,7 +29,7 @@ type Report struct {
 // Run classifies every gold item that passes the topic's keyword prefilter,
 // the same path production data takes.
 func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, now time.Time) (Report, error) {
-	r := Report{Classifier: c.Name(), PromptVersion: stance.PromptVersion, Topic: t.Slug, Date: now, Stance: Confusion{}}
+	r := Report{Classifier: c.Name(), PromptVersion: promptVersion(c), Topic: t.Slug, Date: now, Stance: Confusion{}}
 	start := time.Now()
 	for _, it := range items {
 		if !t.Keywords.MatchString(it.Text) {
@@ -63,6 +63,15 @@ func Run(ctx context.Context, c stance.Classifier, t topic.Topic, items []Item, 
 	}
 	r.Duration = time.Since(start)
 	return r, nil
+}
+
+// promptVersion asks classifiers that support several prompts which one
+// they use.
+func promptVersion(c stance.Classifier) string {
+	if p, ok := c.(interface{ Prompt() string }); ok {
+		return p.Prompt()
+	}
+	return stance.PromptVersion
 }
 
 // WriteMarkdown prints the report for a terminal or an ADR.
