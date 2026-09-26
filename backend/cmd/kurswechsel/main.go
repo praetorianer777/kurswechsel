@@ -17,6 +17,7 @@ import (
 
 	"github.com/praetorianer777/kurswechsel/internal/api"
 	"github.com/praetorianer777/kurswechsel/internal/bundestag"
+	"github.com/praetorianer777/kurswechsel/internal/demo"
 	"github.com/praetorianer777/kurswechsel/internal/ingest"
 	"github.com/praetorianer777/kurswechsel/internal/store"
 	"github.com/praetorianer777/kurswechsel/internal/web"
@@ -29,6 +30,7 @@ commands:
   classify   classify the stance of candidate paragraphs for a topic
   eval       measure a classifier against the hand-labelled gold set
   serve      run the HTTP server
+  seed-demo  fill a database with fictional data for development and tests
 
 Run "kurswechsel <command> -h" for the flags of a command.
 `
@@ -54,6 +56,8 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return evalCmd(ctx, args[1:], stdout)
 	case "serve":
 		return serve(ctx, args[1:])
+	case "seed-demo":
+		return seedDemo(ctx, args[1:], stdout)
 	case "help", "-h", "--help":
 		fmt.Fprint(stdout, usage)
 		return nil
@@ -143,5 +147,24 @@ func ingestCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	fmt.Fprintf(stdout, "imported %d sessions, skipped %d, in %s\n", sum.Imported, sum.Skipped, time.Since(start).Round(time.Second))
 	fmt.Fprintf(stdout, "database: %d politicians, %d sessions, %d speeches, %d paragraphs\n",
 		stats.Politicians, stats.Sessions, stats.Speeches, stats.Paragraphs)
+	return nil
+}
+
+func seedDemo(ctx context.Context, args []string, stdout io.Writer) error {
+	fs := flag.NewFlagSet("seed-demo", flag.ContinueOnError)
+	fs.SetOutput(stdout)
+	db := fs.String("db", "data/demo.db", "SQLite database")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	st, err := store.Open(ctx, *db)
+	if err != nil {
+		return err
+	}
+	defer st.Close()
+	if err := demo.Seed(ctx, st); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "demo data written to %s\n", *db)
 	return nil
 }

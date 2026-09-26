@@ -26,7 +26,8 @@ English.
 
 ## Development
 
-Requirements: Go ≥ 1.26, Node.js ≥ 24, `jq`, and `gh` for the workflow.
+Requirements: Go ≥ 1.26, Node.js ≥ 24, `jq`, `gh` for the workflow, and
+[Ollama](https://ollama.com) for classifying real data.
 
 ```bash
 ./run-tests.sh                          # everything CI runs
@@ -39,6 +40,20 @@ go run ./cmd/kurswechsel serve                                                  
 
 cd frontend && npm ci && npm run dev    # website with /api proxied to the backend
 ```
+
+Without Ollama or a download, `go run ./cmd/kurswechsel seed-demo -db ../data/demo.db`
+creates a small database with **fictional** people and statements for trying
+the website. `./scripts/build.sh` produces `backend/bin/kurswechsel` with the
+website embedded — the whole deployment is that one file plus the database.
+
+### Tests
+
+`./run-tests.sh` runs everything, in this order: the hook tests, `gofmt`,
+`go vet`, `staticcheck`, `go test -race`, the spike smoke tests, Prettier,
+ESLint, `tsc`, Vitest (components, with axe) and Playwright (the real binary
+with demo data, in Chromium at desktop, phone and 360 px widths, with axe
+checking WCAG 2.2 AA on every page in light and dark mode). The first run
+needs `cd frontend && npx playwright install chromium`.
 
 `ingest` downloads the plenary protocols of the 19th–21st legislative
 periods (≈ 470 MB) and the MdB master data into the cache once, then imports

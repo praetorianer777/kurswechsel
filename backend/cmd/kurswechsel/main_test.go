@@ -72,3 +72,13 @@ func TestServeShutsDown(t *testing.T) {
 		t.Fatal("serve did not stop")
 	}
 }
+
+func TestSeedDemo(t *testing.T) {
+	var out bytes.Buffer
+	if err := run(context.Background(), []string{"seed-demo", "-db", t.TempDir() + "/d.db"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "demo data written") {
+		t.Errorf("output: %s", out.String())
+	}
+}

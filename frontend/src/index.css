@@ -1,1 +1,89 @@
 @import "tailwindcss";
+
+/*
+ * Colour tokens. Every text/background pair used on the site meets WCAG 2.2
+ * AA (4.5:1) in both schemes; the Playwright suite checks this with axe. The
+ * stance colours are deliberately free of good/bad connotations (no red vs.
+ * green), and every stance also has its own icon shape.
+ */
+@theme {
+  --color-bg: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-ink: #1a1a1a;
+  --color-muted: #4a4a4a;
+  --color-line: #d4d4d0;
+  --color-accent: #6b3fa0;
+  --color-accent-soft: #efe7f8;
+  --color-highlight: #fff0a8;
+  --color-danger: #a4161a;
+  --color-danger-soft: #fdecec;
+  --color-pro: #0b5394;
+  --color-pro-soft: #e6f0fa;
+  --color-contra: #8a4b00;
+  --color-contra-soft: #fbefe0;
+  --color-neutral: #4a4a4a;
+  --color-neutral-soft: #eeeeec;
+  --color-unclear: #6b3fa0;
+  --color-unclear-soft: #f3edfa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #141414;
+    --color-surface: #1e1e1e;
+    --color-ink: #f1f1ee;
+    --color-muted: #c2c2bd;
+    --color-line: #3d3d3a;
+    --color-accent: #c9a8f0;
+    --color-accent-soft: #34264a;
+    --color-highlight: #5c4d00;
+    --color-danger: #ff9b9b;
+    --color-danger-soft: #3d1a1a;
+    --color-pro: #9cc8f5;
+    --color-pro-soft: #1a2b3d;
+    --color-contra: #f5c27a;
+    --color-contra-soft: #3a2a14;
+    --color-neutral: #d0d0cb;
+    --color-neutral-soft: #2c2c2a;
+    --color-unclear: #d5b8f5;
+    --color-unclear-soft: #2e2440;
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .field {
+    @apply min-h-11 w-full rounded-md border border-muted bg-surface px-3 py-2 text-base text-ink;
+  }
+  .field[aria-invalid="true"] {
+    @apply border-danger;
+  }
+  .btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-4 font-semibold text-surface hover:opacity-90 disabled:opacity-60;
+  }
+  .btn-secondary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-md border border-muted bg-surface px-4 font-semibold text-ink hover:bg-line/40;
+  }
+}
