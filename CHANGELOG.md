@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `-prompt probs` and `-min-confidence`: one-letter answers with probabilities from token log-probabilities; `eval -dump` writes every answer for analysis (ADR 0007, #25)
 - `-prompt label` for `classify` and `eval`: the model returns only relevance and stance, the quote is the first sentence with a topic keyword; 2–3× faster but flips more sides, so not the default (ADR 0006, #22)
 - Architecture and methodology documentation; `kurswechsel eval -db … -gold-reviewed` stores results, and the „Methodik“ page shows measured accuracy only from a run against a reviewed gold set (#7)
 - German website: search by name and topic, profiles, and timelines with original quotes, stance labels (text and icon, never colour alone), marked changes of position, PDF links and a "Fehler melden" dialog; mobile-first, WCAG 2.2 AA checked with axe in light and dark mode (#6)
