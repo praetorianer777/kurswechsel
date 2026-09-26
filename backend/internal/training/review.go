@@ -5,20 +5,24 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/praetorianer777/kurswechsel/internal/stance"
+	"github.com/praetorianer777/kurswechsel/internal/store"
 )
 
 // Reviewer serves a local page for checking pre-labels one at a time. Every
 // verdict is written to the file at once, so the review can stop anywhere.
 type Reviewer struct {
-	Path  string
-	Now   func() time.Time
-	mu    sync.Mutex
-	items []Item
+	Path string
+	Now  func() time.Time
+	// Context looks up the paragraphs around an item; nil shows none.
+	Context func(speechID string, position int) (store.ParagraphContext, error)
+	mu      sync.Mutex
+	items   []Item
 }
 
 // NewReviewer loads the file and draws the agreement sample if needed.
@@ -43,6 +47,7 @@ func (rv *Reviewer) Handler() http.Handler {
 }
 
 type view struct {
+	Context  *store.ParagraphContext
 	Stats    Stats
 	Percent  string
 	Item     *Item
@@ -81,6 +86,13 @@ func (rv *Reviewer) page(w http.ResponseWriter, r *http.Request) {
 	if v.Item != nil {
 		v.Relevant, v.Stance = v.Item.Final()
 		v.Marked = mark(v.Item.Text, v.Item.Quote)
+		if rv.Context != nil {
+			if speech, pos, ok := splitID(v.Item.ID); ok {
+				if c, err := rv.Context(speech, pos); err == nil {
+					v.Context = &c
+				}
+			}
+		}
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := pageTmpl.Execute(w, v); err != nil {
@@ -118,6 +130,16 @@ func (rv *Reviewer) review(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Error(w, "Unbekannter Eintrag", http.StatusNotFound)
+}
+
+// splitID reads "ID2000700100#3" into speech ID and paragraph position.
+func splitID(id string) (string, int, bool) {
+	speech, pos, ok := strings.Cut(id, "#")
+	if !ok {
+		return "", 0, false
+	}
+	n, err := strconv.Atoi(pos)
+	return speech, n, err == nil
 }
 
 func percent(f float64) string { return fmt.Sprintf("%.0f %%", 100*f) }

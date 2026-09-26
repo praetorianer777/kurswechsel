@@ -2,6 +2,8 @@ package training
 
 import (
 	"net/http"
+
+	"github.com/praetorianer777/kurswechsel/internal/store"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
@@ -102,5 +104,35 @@ func TestReviewDone(t *testing.T) {
 	}
 	if !strings.Contains(get(h, "/"), "Alles geprüft.") {
 		t.Error("finished page missing")
+	}
+}
+
+func TestReviewShowsContext(t *testing.T) {
+	rv, _ := reviewer(t)
+	rv.items[0].ID = "ID9#1"
+	rv.Context = func(speech string, pos int) (store.ParagraphContext, error) {
+		if speech != "ID9" || pos != 1 {
+			t.Errorf("context asked for %s#%d", speech, pos)
+		}
+		return store.ParagraphContext{
+			Previous: &store.Neighbour{Speaker: "Max Frager", Text: "Wollen Sie die Wehrpflicht?"},
+			Before:   []store.Neighbour{{Text: "Vorheriger Absatz."}},
+			After:    []store.Neighbour{{Text: "Folgender Absatz."}},
+		}, nil
+	}
+	page := get(rv.Handler(), "/?id=ID9%231")
+	for _, want := range []string{"Davor sprach Max Frager:", "Wollen Sie die Wehrpflicht?", "Vorheriger Absatz.", "Folgender Absatz.", "Zu bewerten:"} {
+		if !strings.Contains(page, want) {
+			t.Errorf("page lacks %q", want)
+		}
+	}
+}
+
+func TestSplitID(t *testing.T) {
+	if s, p, ok := splitID("ID2000700100#12"); !ok || s != "ID2000700100" || p != 12 {
+		t.Errorf("got %s %d %v", s, p, ok)
+	}
+	if _, _, ok := splitID("kaputt"); ok {
+		t.Error("id without position accepted")
 	}
 }

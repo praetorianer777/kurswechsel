@@ -15,6 +15,9 @@
   label { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; margin-right: 1.2rem; }
   textarea { width: 100%; min-height: 3rem; font: inherit; }
   button { min-height: 44px; padding: 0 1.2rem; font: inherit; font-weight: 600; background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+  .context { color: var(--muted); font-size: .95rem; border-left: 4px dotted var(--line); padding-left: 1rem; margin: .5rem 0; }
+  .context .who { font-weight: 600; }
+  .current { border-left: 4px solid var(--accent); }
   .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--line); font-size: .85rem; margin-right: .3rem; }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   details { margin-top: 2rem; }
@@ -31,7 +34,13 @@
 {{with .Item}}
   <p><span class="badge">{{if .Unsure}}unsicher{{else}}Stichprobe{{end}}</span>{{if .Review}}<span class="badge">bereits geprüft</span>{{end}}</p>
   <p class="meta">{{.Date}} · {{.Speaker}} ({{.Party}}) · {{.ID}}</p>
-  <blockquote><p>{{$.Marked}}</p></blockquote>
+  {{with $.Context}}
+    {{with .Previous}}<div class="context"><p class="who">Davor sprach {{.Speaker}}:</p><p>{{.Text}}</p></div>{{end}}
+    {{range .Before}}<div class="context"><p>{{.Text}}</p></div>{{end}}
+  {{end}}
+  <p class="muted">Zu bewerten:</p>
+  <blockquote class="current"><p>{{$.Marked}}</p></blockquote>
+  {{with $.Context}}{{range .After}}<div class="context"><p>{{.Text}}</p></div>{{end}}{{end}}
   <p class="muted">Vorschlag: <strong>{{if .Relevant}}relevant, {{index $.Names .Stance}}{{else}}nicht relevant{{end}}</strong>{{if .Note}} – {{.Note}}{{end}}</p>
   <form method="post" action="/review">
     <input type="hidden" name="id" value="{{.ID}}">

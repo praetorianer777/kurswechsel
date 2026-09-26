@@ -79,12 +79,25 @@ func reviewCmd(ctx context.Context, args []string, stdout io.Writer) error {
 	path := fs.String("file", "../training/wehrpflicht.jsonl", "training file with pre-labels")
 	addr := fs.String("addr", "127.0.0.1:8090", "listen address")
 	sample := fs.Int("sample", 50, "sure pre-labels to check for the agreement rate")
+	db := fs.String("db", "../data/kurswechsel.db", "database for showing the paragraphs around each item; skipped if missing")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	rv, err := training.NewReviewer(*path, *sample)
 	if err != nil {
 		return err
+	}
+	if _, err := os.Stat(*db); err == nil {
+		st, err := store.Open(ctx, *db)
+		if err != nil {
+			return err
+		}
+		defer st.Close()
+		rv.Context = func(speech string, pos int) (store.ParagraphContext, error) {
+			return st.Context(ctx, speech, pos, 2, 1)
+		}
+	} else {
+		slog.Warn("no database, reviewing without context", "db", *db)
 	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
